@@ -15,7 +15,7 @@ from colorama import init, Fore
 # Initialize colorama
 init(autoreset=True)
 
-# Generar dinámicamente la plantilla y el mensaje
+# Dynamically generate template and message
 template = (
     "_¡Hola {name}!_\n\n"
     "_*Recordatorio Importante*_\n\n"
@@ -64,32 +64,32 @@ def send_whatsapp_message(driver, recipient, df, file_path, chat_type='contact')
             print(f"{Fore.RED}WhatsApp session not logged in. Please log in and retry.")
             return
         
-        # Verificar si el mensaje ya fue enviado o tiene un error
+        # Check if message has already been sent or has an error
         current_status = df.loc[df['whatsapp_number'] == recipient, 'status'].iloc[0]
         if current_status.lower() == 'send' or current_status.lower() == 'error':
             print(f"{Fore.YELLOW}Message for {recipient} already processed with status: {current_status}")
             return
         
-        # Abrir WhatsApp Web si no está abierto
+        # Open WhatsApp Web if not already open
         if driver.current_url != 'https://web.whatsapp.com/':
             driver.get('https://web.whatsapp.com/')
         
-        # Esperar a que cargue WhatsApp Web
+        # Wait for WhatsApp Web to load
         wait = WebDriverWait(driver, 30)
         wait.until(EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]')))
         
-        # Seleccionar destinatario (grupo o contacto)
+        # Select recipient (group or contact)
         if chat_type == 'group':
             group = wait.until(EC.element_to_be_clickable((By.XPATH, f"//span[@title='{recipient}']")))
             group.click()
-        else:  # Suponer 'contact' como valor por defecto
+        else:  # Assume 'contact' as default
             chat_input = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]')))
             chat_input.clear()
             chat_input.send_keys(recipient)
             chat_input.send_keys(Keys.ENTER)
         
-        # Esperar a que cargue el chat
-        time.sleep(3)  # Ajustar el tiempo según sea necesario
+        # Wait for chat to load
+        time.sleep(3)  # Adjust time as needed
                 
         message_fields = {
             'name': df.loc[df['whatsapp_number'] == recipient, 'name'].iloc[0].upper(),
@@ -100,45 +100,45 @@ def send_whatsapp_message(driver, recipient, df, file_path, chat_type='contact')
         
         message = template.format(**message_fields)
         
-        # Limpiar el mensaje para caracteres solo BMP
+        # Clean message to BMP characters only
         clean_message = clean_to_bmp(message)
         
-        # Localizar el campo de entrada del mensaje y enviar el mensaje
+        # Locate message input field and send message
         message_input = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[1]/div/div/div[2]/div[4]/div/footer/div[1]/div/span[2]/div/div[2]/div[1]/div/div[1]/p')))
         
-        # Limpiar cualquier texto existente en el campo de entrada del mensaje
+        # Clear any existing text in message input field
         message_input.clear()
         
-        # Enviar el nuevo mensaje con soporte multilínea
+        # Send new message with multiline support
         lines = clean_message.splitlines()
         for line in lines:
             message_input.send_keys(line)
-            message_input.send_keys(Keys.SHIFT + Keys.ENTER)  # Insertar nueva línea sin enviar el mensaje
+            message_input.send_keys(Keys.SHIFT + Keys.ENTER)  # Insert new line without sending message
         
-        # Enviar el mensaje final
+        # Send final message
         message_input.send_keys(Keys.ENTER)
         print(f"{Fore.GREEN}Message sent to {recipient}")
         
-        # Actualizar estado y tiempo en el DataFrame
+        # Update status and timestamp in DataFrame
         df.loc[df['whatsapp_number'] == recipient, 'status'] = 'Correct'
         df.loc[df['whatsapp_number'] == recipient, 'timestep'] = datetime.today().date()
         
-        # Guardar DataFrame con el estado actualizado
+        # Save DataFrame with updated status
         df.to_excel(file_path, index=False)
         
     except NoSuchElementException as e:
         print(f"{Fore.RED}Error: Element not found - {str(e)}")
-        # Actualizar estado a 'Error' en el DataFrame
+        # Update status to 'Error' in DataFrame
         df.loc[df['whatsapp_number'] == recipient, 'status'] = 'Error'
         df.loc[df['whatsapp_number'] == recipient, 'timestep'] = datetime.today().date()
-        df.to_excel(file_path, index=False)  # Guardar DataFrame con estado actualizado
+        df.to_excel(file_path, index=False)  # Save DataFrame with updated status
     except Exception as e:
         print(f"{Fore.RED}Error sending message to {recipient}: {str(e)}")
-        # Actualizar estado a 'Error' en el DataFrame
+        # Update status to 'Error' in DataFrame
         df.loc[df['whatsapp_number'] == recipient, 'status'] = 'Error'
         df.loc[df['whatsapp_number'] == recipient, 'timestep'] = datetime.today().date()
-        df.to_excel(file_path, index=False)  # Guardar DataFrame con estado actualizado
-        
+        df.to_excel(file_path, index=False)  # Save DataFrame with updated status
+
 # Load Excel data
 def load_excel_data(file_path, sheet_name='Sheet1'):
     try:
