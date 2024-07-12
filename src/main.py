@@ -1,6 +1,7 @@
 import platform
 import re
 import subprocess
+import sys
 import pandas as pd
 from datetime import datetime, timedelta
 import requests
@@ -398,11 +399,11 @@ def load_excel_data(file_path: str, sheet_name: str = "Sheet1") -> pd.DataFrame 
                 "surname": ["Rosas"],
                 "name": ["Nahuel"],
                 "whatsapp_number": ["3517885067"],
-                "expire_date": [pd.Timestamp("2024-06-28")],
+                "expire_date": [pd.Timestamp.today() + pd.Timedelta(days=2)],
                 "vehicle_license": ["AE325CB"],
                 "model_vehicle": ["cronos"],
                 "status": [""],
-                "timestep": [pd.Timestamp("2024-06-26")],
+                "timestep": [pd.Timestamp.today()],
             }
             df = pd.DataFrame(data)
             df.to_excel(file_path, index=False)
@@ -482,7 +483,7 @@ def preview_whatsapp_message(df):
                     .iloc[0]
                     .upper(),
                     "model_vehicle": df.loc[
-                        df["whsatsapp_number"] == recipient, "model_vehicle"
+                        df["whatsapp_number"] == recipient, "model_vehicle"
                     ]
                     .iloc[0]
                     .upper(),
@@ -522,7 +523,7 @@ def display_pending_messages(df, today):
     try:
         pending_df = df[
             (df["expire_date"].apply(lambda x: x.date()) - timedelta(days=2) == today)
-            & (~df["status"].str.lower().isin(["send", "error"]))
+            & (~df["status"].str.lower().isin(["correct", "error"]))
         ]
         if not pending_df.empty:
             print(f"{Fore.YELLOW}Pending messages to be sent:")
@@ -673,5 +674,7 @@ if __name__ == "__main__":
 
         finally:
             driver.quit()  # Ensure WebDriver is closed
+            sys.exit(0)
+            
     else:
         verbose_excel_data(file_path)
